@@ -26,7 +26,7 @@ export default {
         alias({
             "@": path.join(__dirname, "src"),
             "vue": "node_modules/vue/dist/vue.esm.js",
-            resolve: [ ".js", ".json", ".vue" ]
+            resolve: [ ".js", "/index.js", ".json", ".vue" ]
         }),
         vue({
             css: true

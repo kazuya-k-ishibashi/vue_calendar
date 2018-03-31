@@ -1,114 +1,94 @@
 <template lang="pug">
-  div.root
+  div.component-root
+
     div.header
       div.prev-month
         button.change-prev-month-button(
-          @click="changePrevMonth"
+          @click="subMonth"
           :title="formatYearAndMonth(prevMonth)") ＜
 
       div.calendar-year-and-month
         span
-          select.calendar-year(v-model="calendarYear")
+          select.calendar-year(@change="changeYear")
             option(v-for="year in calendarYearOptions"
-                :value="year") {{ year }}
+                :value="year" :selected="year === calendarYear")
+              | {{ year }}
           span 年
-          select.calendar-month(v-model="calendarMonth")
+          select.calendar-month(@change="changeMonth")
             option(v-for="month in calendarMonthOptions"
-                :value="month") {{ month + 1 }}
+                :value="month" :selected="month === calendarMonth")
+              | {{ month + 1 }}
           span 月
 
       div.next-month
         button.change-next-month-button(
-          @click="changeNextMonth"
+          @click="addMonth"
           :title="formatYearAndMonth(nextMonth)") ＞
     
     div.body
       div.week-header
-        div.day(v-for="day in weekday" :class="day.en")
+        div.day(v-for="day in Weekday" :class="day.en")
           span {{ day.ja }}
       div.week(v-for="week in weekList")
         div.date(v-for="date in week"
             :class="[className.weekday(date), className.isThisMonth(date, calendarDate)]")
           span {{ date.getDate() }}
 
-    //- div(v-for="week in weeks")
 </template>
 
 <script>
-import startOfMonth    from "date-fns/start_of_month"
-import startOfWeek     from "date-fns/start_of_week"
-import lastDayOfMonth  from "date-fns/last_day_of_month"
-import lastDayOfWeek   from "date-fns/last_day_of_week"
-import addDays         from "date-fns/add_days"
-import addMonths       from "date-fns/add_months"
-import subMonths       from "date-fns/sub_months"
-import isBefore        from "date-fns/is_before"
-import isSameDay       from "date-fns/is_same_day"
-import isSameMonth     from "date-fns/is_same_month"
-import formatDate      from "date-fns/format"
-import { range }       from "@/js/MyArrayUtility"
+import { mapState, mapGetters, mapActions } from "vuex"
+import isSameMonth from "date-fns/is_same_month"
+import formatDate  from "date-fns/format"
+import { range }   from "@/js/MyArrayUtility"
+import { Weekday } from "@/js/MyCalendarUtility"
 
 
-const today = new Date()
-
-const weekday = Object.freeze({
-    SUNDAY      : { id: 0, ja: "日", en: "sunday"    },
-    MONDAY      : { id: 1, ja: "月", en: "monday"    },
-    TUESDAY     : { id: 2, ja: "火", en: "tuesday"   },
-    WEDNESDAY   : { id: 3, ja: "水", en: "wednesday" },
-    THURSDAY    : { id: 4, ja: "木", en: "thursday"  },
-    FRIDAY      : { id: 5, ja: "金", en: "friday"    },
-    SATURDAY    : { id: 6, ja: "土", en: "saturday"  }
-})
+const className = {
+    isThisMonth(
+            date         /* :Date */,
+            calendarDate /* :Date */) /* :string */ {
+        return isSameMonth(date, calendarDate)
+                ? "this-month"
+                : "not-this-month"
+    },
+    weekday(date /* :Date */) {
+        return Object.getOwnPropertyNames(Weekday)
+                .map(key => Weekday[key])
+                .find(day => day.id === date.getDay())
+                .en
+    }
+}
 
 export default {
     data() {
         return {
-            today,
-            weekday,
-            calendarYear : today.getFullYear(),
-            calendarMonth: today.getMonth(),
-            className: {
-                isThisMonth(date /* :Date */, calendarDate /* :Date */)
-                        /* :string */ {
-                    return isSameMonth(date, calendarDate)
-                            ? "this-month"
-                            : "not-this-month"
-                },
-                weekday(date /* :Date */) {
-                    return Object.getOwnPropertyNames(weekday)
-                            .map(key => weekday[key])
-                            .find(day => day.id === date.getDay())
-                            .en
-                }
-            }
+            Weekday,
+            className
         }
     },
-    computed: {
-        calendarDate() {
-            return new Date(this.calendarYear, this.calendarMonth, 1)
-        },
-        weekList() {
-            return createWeekList(this.calendarDate)
-        },
+    computed: Object.assign({
         calendarYearOptions() {
-            return range(
-                    this.calendarYear - 5,
-                    this.calendarYear + 5)
+            const year = this.calendarYear
+            return range(year - 5, year + 5)
         },
         calendarMonthOptions() {
             return range(0, 11)
-        },
-        prevMonth() {
-            return subMonths(this.calendarDate, 1)
-        },
-        nextMonth() {
-            return addMonths(this.calendarDate, 1)
-        },
+        }
     },
-    methods: {
+    mapState([
+        "calendarDate"
+    ]),
+    mapGetters([
+        "calendarYear",
+        "calendarMonth",
+        "prevMonth",
+        "nextMonth",
+        "weekList"
+    ])),
+    methods: Object.assign({
         formatYearAndMonth(
-                dateOrYear  /* :Date | number */,
+                dateOrYear  /* :Date      | number */,
                 month       /* :undefined | number */) /* :string */ {
             const date = (dateOrYear instanceof Date)
                     ? dateOrYear
@@ -116,48 +96,18 @@ export default {
             return formatDate(date, "YYYY年M月")
         },
         isSameMonth,
-        changePrevMonth() {
-            this.calendarYear  = this.prevMonth.getFullYear()
-            this.calendarMonth = this.prevMonth.getMonth()
+        changeYear(event) {
+            this.$store.dispatch("changeYear", event.target.value)
         },
-        changeNextMonth() {
-            this.calendarYear  = this.nextMonth.getFullYear()
-            this.calendarMonth = this.nextMonth.getMonth()
-        },
-    }
-}
-
-
-function createWeekList(
-        dateOrYear  /* :Date | number */,
-        month       /* :undefined | number */)
-        /* :Array<Array<Date>> */ {
-
-    const weekList = []
-
-    const _startDayOfMonth = (dateOrYear instanceof Date)
-            ? startOfMonth(dateOrYear)
-            : new Date(dateOrYear, month, 1)
-    const startDayOfStartWeekOfMonth = startOfWeek(_startDayOfMonth)
-
-    const _lastDayOfMonth = lastDayOfMonth(_startDayOfMonth)
-    const lastDayOfLastWeekOfMonth = lastDayOfWeek(_lastDayOfMonth)
-
-    let dateOfWeekList = []
-    for (let date = startDayOfStartWeekOfMonth;
-            isBefore(date, addDays(lastDayOfLastWeekOfMonth, 1));
-            date = addDays(date, 1)) {
-
-        dateOfWeekList.push(date)
-        if (isSameDay(date, lastDayOfWeek(date))) {
-            weekList.push(dateOfWeekList)
-            dateOfWeekList = []
+        changeMonth(event) {
+            this.$store.dispatch("changeMonth", event.target.value)
         }
-
-    }
-
-    return weekList
+    }, mapActions([
+        "subMonth",
+        "addMonth"
+    ]))
 }
+
 </script>
 
 <style lang="stylus" scoped>
