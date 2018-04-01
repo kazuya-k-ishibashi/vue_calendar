@@ -1,13 +1,13 @@
-import Vue      from "vue"
-import Calendar from "@/components/Calendar"
-import store    from "@/store"
+import Vue   from "vue"
+import App   from "@/components/App"
+import store from "@/store"
 
 
 new Vue({
-    el: "calendar",
+    el: "#app",
     store,
-    template: "<calendar />",
+    template: "<app />",
     components: {
-        Calendar
+        App
     }
 })

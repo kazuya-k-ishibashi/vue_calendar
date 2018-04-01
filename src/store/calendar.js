@@ -1,6 +1,6 @@
 import subMonths from "date-fns/sub_months"
 import addMonths from "date-fns/add_months"
-import { Weekday, createWeekListOfMonth } from "@/util/MyCalendarUtility"
+import { Weekday, createWeekListOfMonth } from "@/utils/MyCalendarUtility"
 
 
 const today = new Date()
