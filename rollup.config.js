@@ -9,7 +9,7 @@ import vue          from "rollup-plugin-vue"
 
 
 export default {
-    input: "./src/js/index.js",
+    input: "./src/index.js",
     output: {
         file: "./dist/bundle.js",
         format: "iife",
